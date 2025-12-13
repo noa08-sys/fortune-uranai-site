@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>四柳推命と姓名による診断サイト</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP&display=swap" rel="stylesheet">
+<style>
+body {
+    font-family: 'Noto Serif JP', serif;
+    background-color: #FFF5E5; /* pastel orange */
+    color: #333;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+}
+header {
+    background-color: #F7B787; /* header darker orange */
+    color: #fff;
+    padding: 1.5rem;
+    text-align: center;
+}
+main {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 1rem;
+    background-color: #FFFFFF;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+label {
+    display: block;
+    margin-top: 1rem;
+    font-weight: bold;
+}
+input[type="text"],
+input[type="date"] {
+    width: 100%;
+    padding: 0.5rem;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+button {
+    margin-top: 1.5rem;
+    padding: 0.7rem 1.5rem;
+    background-color: #F7B787;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+}
+button:hover {
+    background-color: #E29A5E;
+}
+#result {
+    margin-top: 2rem;
+    padding: 1rem;
+    border: 1px solid #F7B787;
+    background-color: #FFFAF0;
+    border-radius: 4px;
+}
+</style>
+</head>
+<body>
+    <header>
+        <h1>四柳推命・姓名診断</h1>
+        <p>あなたの悩みをお聞きします。</p>
+    </header>
+    <main>
+        <h2>診断フォーム</h2>
+        <p>生年月日とお名前を入力してください。</p>
+        <label for="name">お名前</label>
+        <input type="text" id="name" placeholder="例：山田太郎" />
+        <label for="birthday">生年月日</label>
+        <input type="date" id="birthday" />
+        <button id="submit">診断する</button>
+        <div id="result"></div>
+    </main>
+<script>
+// Japanese zodiac animals
+const zodiacSigns = ["\u5b50\uff08\u306d\u305a\u307f\uff09","\u4e11\uff08\u3046\u3057\uff09","\u5bc5\uff08\u3068\u3089\uff09","\u536f\uff08\u3046\u3055\u304e\uff09","\u8fb0\uff08\u305f\u3064\uff09","\u5df3\uff08\u3078\u3073\uff09","\u5348\uff08\u3046\u307e\uff09","\u672a\uff08\u3072\u3064\u3058\uff09","\u7533\uff08\u3055\u308b\uff09","\u9149\uff08\u3068\u308a\uff09","\u620c\uff08\u3044\u306c\uff09","\u4ea5\uff08\u3044\u306e\u3057\u3057\uff09"];
+// Messages for each zodiac sign
+const zodiacMessages = [
+    "\u884c\u52d5\u529b\u3068\u597d\u5947\u5fc3\u304c\u76db\u3093\u306a\u4e00\u5e74\u306b\u306a\u308a\u305d\u3046\u3067\u3059\u3002\u65b0\u3057\u3044\u3053\u3068\u306b\u6311\u6226\u3057\u3066\u307f\u307e\u3057\u3087\u3046\u3002",
+    "\u5805\u5b9f\u3055\u304c\u5927\u5207\u306a\u5e74\u3002\u76ee\u306e\u524d\u306e\u3053\u3068\u3092\u4e00\u6b69\u305a\u3064\u78ba\u5b9f\u306b\u9032\u3081\u3066\u304f\u3060\u3055\u3044\u3002",
+    "\u81ea\u5206\u3089\u3057\u3055\u3092\u5927\u5207\u306b\u3057\u306a\u304c\u3089\u3001\u5927\u304d\u306a\u98db\u8e8d\u306e\u30c1\u30e3\u30f3\u30b9\u304c\u8a2a\u308c\u305d\u3046\u3067\u3059\u3002",
+    "\u5fc3\u306e\u8abf\u548c\u3092\u610f\u8b58\u3059\u308b\u3068\u826f\u3044\u3067\u3057\u3087\u3046\u3002\u4eba\u9593\u95a2\u4fc2\u304c\u8c4a\u304b\u306b\u306a\u308a\u307e\u3059\u3002",
+    "\u904b\u6c17\u304c\u4e0a\u6607\u50be\u5411\u306b\u3042\u308a\u307e\u3059\u3002\u3084\u308a\u305f\u304b\u3063\u305f\u3053\u3068\u3092\u5f62\u306b\u3059\u308b\u597d\u6a5f\u3067\u3059\u3002",
+    "\u76f4\u611f\u304c\u51f5\u3048\u308b\u6642\u671f\u3067\u3059\u3002\u8ff7\u3063\u305f\u3089\u81ea\u5206\u306e\u611f\u899a\u3092\u4fe1\u3058\u3066\u9032\u307f\u307e\u3057\u3087\u3046\u3002",
+    "\u30a8\u30cd\u30eb\u30ae\u30fc\u30b7\u30c3\u30af\u306b\u52d5\u3051\u308b\u5e74\u3002\u7a33\u6170\u7684\u306a\u884c\u52d5\u304c\u5e78\u904b\u3092\u5f15\u304d\u5bc4\u305b\u307e\u3059\u3002",
+    "\u5468\u56f2\u3078\u306e\u601d\u3044\u3084\u308a\u3092\u5fd8\u308c\u305a\u306b\u3002\u652f\u3048\u5408\u3044\u306e\u4e2d\u3067\u6210\u9577\u3059\u308b\u3067\u3057\u3087\u3046\u3002",
+    "\u65b0\u3057\u3044\u8996\u70b9\u3084\u51fa\u4f1a\u3044\u304c\u3042\u308a\u305d\u3046\u3067\u3059\u3002\u67d4\u8ed2\u306a\u59ff\u52e2\u304c\u9375\u3067\u3059\u3002",
+    "\u81ea\u4fe1\u3092\u6301\u3063\u3066\u884c\u52d5\u3059\u308b\u3068\u826f\u3044\u3067\u3057\u3087\u3046\u3002\u81ea\u5206\u306e\u9b45\u529b\u304c\u8f1d\u304d\u307e\u3059\u3002",
+    "\u8aa0実\u3055\u304c\u8a55\u4fa1\u3055\u308c\u308b\u5e74\u3002\u7c97\u304d\u5f37\u304f\u53d7\u3051\u3068\u308b\u4e8b\u3067\u6210\u679c\u304c\u51fa\u307e\u3059\u3002",
+    "\u7a4dま\u306aいな\u904b\u6c17\u3002\u81ea\u5206\u306e\u30da\u30fc\u30b9\u3067\u9032\u307f\u306a\u304c\u3089\u5185\u9762\u3092\u78e8\u304d\u307e\u3057\u3087\u3046。"
+];
+// Numerology messages based on name value mod 9 (1-9)
+const numerologyMessages = {
+    1: "\u3042\u306a\u305f\u306b\u306f\u5f37\u3044\u30ea\u30fc\u30c0\u30fc\u30b7\u30c3\u30d7\u3068\u6c7a\u65ad\u529b\u304c\u3042\u308a\u307e\u3059\u3002\u65b0\u3057\u3044\u3053\u3068\u3092\u59cb\u3081\u308b\u30a8\u30cd\u30eb\u30ae\u30fc\u304c\u6d8c\u3044\u3066\u304f\u308b\u3067\u3057\u3087\u3046\u3002",
+    2: "\u5354\u8abf\u6027\u304c\u9ad8\u307e\u308a\u3001\u4eba\u3068\u306e\u3064\u306a\u304c\u308a\u304c\u91cd\u8981\u306b\u306a\u308a\u307e\u3059\u3002\u5468\u56f2\u3068\u529b\u3092\u5408\u308f\u305b\u308b\u3053\u3068\u3067\u6210\u529f\u3078\u5bfc\u304b\u308c\u307e\u3059\u3002",
+    3: "\u5275\u9020\u6027\u3068\u697d\u3057\u3055\u304c\u6ea2\u308c\u308b\u6642\u671f\u3067\u3059\u3002\u8da3\u5473\u3084\u8868\u73fe\u6d3b\u52d5\u306b\u53c2\u52a0\u3059\u308b\u3068\u826f\u3044\u3067\u3057\u3087\u3046。",
+    4: "\u52b5\u529b\u3068\u5b9f\u76f4\u3055\u304c\u5831\u308f\u308c\u308b\u5e74\u3002\u76ee\u6a19\u306b\u5411\u3051\u3066\u5730\u9053\u306b\u7d2b\u304d\u4e0a\u3052\u308b\u3053\u3068\u304c\u6210\u679c\u306b\u3064\u306a\u304c\u308a\u307e\u3059。",
+    5: "\u5909\u5316\u304c\u8a2a\u308c\u308b\u4e88\u611f\u3002\u67d4\u8cdb\u306b\u5bfe\u5f53\u3057\u3001\u5909\u5316\u3092\u697d\u3057\u3080\u3053\u3068\u3067\u904b\u6c17\u304c\u958b\u3051\u307e\u3059\u3002",
+    6: "\u611b\u60c5\u3084\u5bb6\u5ead\u304c\u30c6\u30fc\u30de\u306b\u306a\u308a\u307e\u3059\u3002\u8fd1\u304f\u306e\u4eba\u3068\u306e\u6642\u9593\u3092\u5927\u5207\u306b\u3059\u308b\u3068\u826f\u3044\u3067\u3057\u3087\u3046。",
+    7: "\u81ea\u5206\u81ea\u8eab\u3068\u5411\u304d\u5408\u3046\u6642\u671f\u3067\u3059\u3002\u5b66\u3073\u3084\u7cbe\u795e\u6027\u3092\u6df1\u3081\u308b\u3053\u3068\u3067\u6c17\u3065\u304d\u304c\u5f97\u3089\u308c\u307e\u3059。",
+    8: "\u7269\u8cea\u7684\u306a\u8c6a\u3055\u3084\u6210\u529f\u304c\u671f\u5f85\u3067\u304d\u307e\u3059\u3002\u73fe\u5b9f\u7684\u306a\u76ee\u6a19\u8a2d\u5b9a\u3068\u884c\u52d5\u304c\u30ab\u30ae\u3067\u3059\u3002",
+    9: "\u5b8c\u6210\u3068\u7d50\u5408\u306e\u904b\u6c17\u3002\u3053\u308c\u307e\u3067\u306e\u52b5\u529b\u304c\u5b9f\u3092\u7d50\u3073\u3001\u65b0\u3057\u3044\u30b9\u30c6\u30fc\u30b8\u306b\u9032\u3080\u6e96\u5099\u304c\u6574\u3044\u307e\u3059。"
+};
+
+document.getElementById('submit').addEventListener('click', function() {
+    const name = document.getElementById('name').value.trim();
+    const birthdayStr = document.getElementById('birthday').value;
+    const resultDiv = document.getElementById('result');
+    resultDiv.innerHTML = '';
+    if (!name || !birthdayStr) {
+        resultDiv.textContent = "お名前と生年月日を入力してください。";
+        return;
+    }
+    const birthYear = new Date(birthdayStr).getFullYear();
+    const zodiacIndex = (birthYear - 4) % 12;
+    const zodiac = zodiacSigns[zodiacIndex];
+    const zodiacMessage = zodiacMessages[zodiacIndex];
+
+    // Calculate simple name value: sum of char codes
+    let sum = 0;
+    for (let i = 0; i < name.length; i++) {
+        sum += name.charCodeAt(i);
+    }
+    const numerologyNumber = (sum % 9) || 9;
+    const numerologyMessage = numerologyMessages[numerologyNumber];
+
+    resultDiv.innerHTML = `<h3>診断結果</h3>
+        <p><strong>あなたの干支:</strong> ${zodiac}</p>
+        <p>${zodiacMessage}</p>
+        <p><strong>名前の運勢番号:</strong> ${numerologyNumber}</p>
+        <p>${numerologyMessage}</p>
+        <p>※この診断は参考程度にお楽しみください。</p>`;
+});
+</script>
+</body>
+</html>
